@@ -63,25 +63,76 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          envs: GITHUB_TOKEN,GITHUB_ACTOR,GITHUB_REPOSITORY,APP_ENV
           script: |
             set -e
-
-            # Go to app directory
             cd /opt/content-agent
 
-            # Log in to GHCR from VPS
+            # ── Write .env from GitHub Secrets ─────────────────
+            cat > .env << 'ENVEOF'
+            DATABASE_URL=sqlite:////app/data/content_agent.db
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_BLAZINGPROJECTS_CHAT_ID=${{ secrets.TELEGRAM_BLAZINGPROJECTS_CHAT_ID }}
+            TELEGRAM_EXAMKITS_CHAT_ID=${{ secrets.TELEGRAM_EXAMKITS_CHAT_ID }}
+            TELEGRAM_WATMALL_CHAT_ID=${{ secrets.TELEGRAM_WATMALL_CHAT_ID }}
+            TELEGRAM_PAYAPP_CHAT_ID=${{ secrets.TELEGRAM_PAYAPP_CHAT_ID }}
+            TELEGRAM_REALTOUR_CHAT_ID=${{ secrets.TELEGRAM_REALTOUR_CHAT_ID }}
+            TELEGRAM_STANETACADEMY_CHAT_ID=${{ secrets.TELEGRAM_STANETACADEMY_CHAT_ID }}
+            PORT=4001
+            FRONTEND_URL=http://${{ secrets.VPS_HOST }}:3000
+            ENVEOF
+
+            # ── Write docker-compose.yml ────────────────────────
+            cat > docker-compose.yml << 'COMPOSEEOF'
+            version: "3.9"
+            services:
+              backend:
+                image: ghcr.io/starnetweb/contents/backend:latest
+                container_name: content_backend
+                restart: unless-stopped
+                ports:
+                  - "4001:4001"
+                env_file:
+                  - .env
+                volumes:
+                  - db_data:/app/data
+                environment:
+                  - DATABASE_URL=sqlite:////app/data/content_agent.db
+                healthcheck:
+                  test: ["CMD-SHELL", "curl -f http://localhost:4001/health || exit 1"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+
+              frontend:
+                image: ghcr.io/starnetweb/contents/frontend:latest
+                container_name: content_frontend
+                restart: unless-stopped
+                ports:
+                  - "3000:3000"
+                depends_on:
+                  - backend
+
+            volumes:
+              db_data:
+            COMPOSEEOF
+
+            # ── Log in to GHCR from VPS ─────────────────────────
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
               -u ${{ github.actor }} --password-stdin
 
-            # Pull latest images
-            export GITHUB_REPOSITORY=${{ github.repository }}
-            export VPS_HOST=${{ secrets.VPS_HOST }}
+            # ── Pull latest images & restart ────────────────────
             docker compose pull
-
-            # Restart containers with zero-downtime
             docker compose up -d --remove-orphans
 
-            # Clean up old images
+            # ── Seed DB on first run (idempotent) ───────────────
+            docker exec content_backend python data/seed.py || true
+
+            # ── Cleanup old images ──────────────────────────────
             docker image prune -f
 
-            echo "Deployment complete."
+            echo "=== Deployment complete ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
