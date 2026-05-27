@@ -1,4 +1,4 @@
-name: Build & Deploy to VPS
+name: Build & Push Docker Images
 
 on:
   push:
@@ -10,18 +10,16 @@ env:
   REPO: ${{ github.repository }}
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ── 2. Log in to GitHub Container Registry ───────────────
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -29,11 +27,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 3. Set up Docker Buildx ───────────────────────────────
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ── 4. Build & push backend image ────────────────────────
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
@@ -43,7 +39,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── 5. Build & push frontend image ───────────────────────
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
@@ -55,90 +50,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── 6. Deploy to Hostinger VPS via SSH ───────────────────
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ vars.VPS_HOST }}
-          username: ${{ vars.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ vars.VPS_PORT }}
-          script: |
-            set -e
-            mkdir -p /opt/content-agent
-            cd /opt/content-agent
-
-            # ── Write .env file ─────────────────────────────────
-            cat > .env << 'ENVEOF'
-            DATABASE_URL=sqlite:////app/data/content_agent.db
-            SECRET_KEY=${{ vars.SECRET_KEY }}
-            ANTHROPIC_API_KEY=${{ vars.ANTHROPIC_API_KEY }}
-            TAVILY_API_KEY=${{ vars.TAVILY_API_KEY }}
-            TELEGRAM_BOT_TOKEN=${{ vars.TELEGRAM_BOT_TOKEN }}
-            TELEGRAM_BLAZINGPROJECTS_CHAT_ID=${{ vars.TELEGRAM_BLAZINGPROJECTS_CHAT_ID }}
-            TELEGRAM_EXAMKITS_CHAT_ID=${{ vars.TELEGRAM_EXAMKITS_CHAT_ID }}
-            TELEGRAM_WATMALL_CHAT_ID=${{ vars.TELEGRAM_WATMALL_CHAT_ID }}
-            TELEGRAM_PAYAPP_CHAT_ID=${{ vars.TELEGRAM_PAYAPP_CHAT_ID }}
-            TELEGRAM_REALTOUR_CHAT_ID=${{ vars.TELEGRAM_REALTOUR_CHAT_ID }}
-            TELEGRAM_STANETACADEMY_CHAT_ID=${{ vars.TELEGRAM_STANETACADEMY_CHAT_ID }}
-            PORT=4001
-            FRONTEND_URL=http://${{ vars.VPS_HOST }}:3000
-            ENVEOF
-
-            # ── Write docker-compose.yml ────────────────────────
-            cat > docker-compose.yml << 'COMPOSEEOF'
-            version: "3.9"
-            services:
-              backend:
-                image: ghcr.io/starnetweb/contents/backend:latest
-                container_name: content_backend
-                restart: unless-stopped
-                ports:
-                  - "4001:4001"
-                env_file:
-                  - .env
-                volumes:
-                  - db_data:/app/data
-                environment:
-                  - DATABASE_URL=sqlite:////app/data/content_agent.db
-                healthcheck:
-                  test: ["CMD-SHELL", "curl -f http://localhost:4001/health || exit 1"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-
-              frontend:
-                image: ghcr.io/starnetweb/contents/frontend:latest
-                container_name: content_frontend
-                restart: unless-stopped
-                ports:
-                  - "3000:3000"
-                depends_on:
-                  - backend
-
-            volumes:
-              db_data:
-            COMPOSEEOF
-
-            # ── Log in to GHCR from VPS ─────────────────────────
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
-              -u ${{ github.actor }} --password-stdin
-
-            # ── Install Docker if not present ───────────────────
-            if ! command -v docker &>/dev/null; then
-              curl -fsSL https://get.docker.com | sh
-              systemctl enable docker && systemctl start docker
-            fi
-
-            # ── Pull latest images & restart ────────────────────
-            docker compose pull
-            docker compose up -d --remove-orphans
-
-            # ── Seed DB on first run (safe to re-run) ───────────
-            docker exec content_backend python data/seed.py || true
-
-            # ── Cleanup old images ──────────────────────────────
-            docker image prune -f
-
-            echo "=== Deployment complete ==="
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+      - name: Images ready
+        run: |
+          echo "Backend : ghcr.io/${{ env.REPO }}/backend:latest"
+          echo "Frontend: ghcr.io/${{ env.REPO }}/frontend:latest"
