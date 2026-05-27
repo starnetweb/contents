@@ -106,8 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </svg>
           </button>
           <span className="text-white font-semibold text-sm">
-            {navItems.find((n) => n.pathname === pathname)?.label ||
-             navItems.find((n) => pathname.startsWith(n.href) && n.href !== "/admin")?.label ||
+            {navItems.find((n) => pathname.startsWith(n.href) && n.href !== "/admin")?.label ||
              "Overview"}
           </span>
           <div className="w-9" /> {/* spacer */}
