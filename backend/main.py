@@ -15,6 +15,22 @@ load_dotenv()
 # Create all tables on startup
 models.Base.metadata.create_all(bind=engine)
 
+# Run lightweight column migrations for existing databases
+def _migrate():
+    from sqlalchemy import text, inspect
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        user_cols = [c["name"] for c in inspector.get_columns("users")]
+        if "telegram_chat_id" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN telegram_chat_id VARCHAR"))
+            print("[migrate] Added users.telegram_chat_id")
+        if "telegram_token" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN telegram_token VARCHAR"))
+            print("[migrate] Added users.telegram_token")
+        conn.commit()
+
+_migrate()
+
 app = FastAPI(
     title="Content Agent API",
     description="AI-powered social media content agent for 6 Nigerian brands",
