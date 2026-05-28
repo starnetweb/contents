@@ -32,6 +32,8 @@ export const getUsers = () => API.get("/auth/users");
 export const registerUser = (data: { name: string; email: string; password: string; role: string }) =>
   API.post("/auth/register", data);
 export const deleteUser = (id: string) => API.delete(`/auth/users/${id}`);
+export const generateTelegramLink = () => API.post("/auth/telegram/generate-link");
+export const getTelegramStatus = () => API.get("/auth/telegram/status");
 
 // ── Brands ─────────────────────────────────────────────────
 export const getBrands = () => API.get("/brands/");

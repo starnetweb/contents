@@ -23,6 +23,8 @@ services:
       - TELEGRAM_STANETACADEMY_CHAT_ID=${TELEGRAM_STANETACADEMY_CHAT_ID}
       - PORT=4001
       - FRONTEND_URL=http://${VPS_HOST}:3000
+      - VPS_HOST=${VPS_HOST}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
 
   frontend:
     image: ghcr.io/starnetweb/contents/frontend:latest

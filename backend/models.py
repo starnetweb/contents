@@ -19,6 +19,8 @@ class User(Base):
     role      = Column(String, default="creator")   # admin | creator
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
+    telegram_chat_id  = Column(String, nullable=True)   # set after user connects bot
+    telegram_token    = Column(String, nullable=True)   # one-time link token
 
 
 class Brand(Base):

@@ -8,6 +8,7 @@ const navItems = [
   { href: "/creator", label: "Dashboard", icon: "📊" },
   { href: "/creator/links", label: "Submit Links", icon: "🔗" },
   { href: "/creator/history", label: "Content History", icon: "🗂️" },
+  { href: "/creator/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function CreatorLayout({ children }: { children: React.ReactNode }) {

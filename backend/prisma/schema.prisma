@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Brand {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String
+  website        String
+  niche          String
+  platforms      String   // JSON array: ["instagram","facebook","tiktok","youtube","twitter"]
+  telegramChatId String?
+  createdAt      DateTime @default(now())
+
+  contentDays ContentDay[]
+  scores      Score[]
+  postLinks   PostLink[]
+}
+
+model ContentDay {
+  id          String   @id @default(cuid())
+  brandId     String
+  forDate     DateTime // the date this content is meant to be posted
+  content     String   // JSON: { platform: { caption, hashtags, imagePrompt } }
+  newsContext String   // JSON: array of news items used
+  generatedAt DateTime @default(now())
+
+  brand     Brand      @relation(fields: [brandId], references: [id])
+  postLinks PostLink[]
+}
+
+model PostLink {
+  id           String   @id @default(cuid())
+  brandId      String
+  contentDayId String
+  platform     String   // instagram | facebook | twitter | tiktok | youtube
+  url          String
+  submittedAt  DateTime @default(now())
+  submittedBy  String?
+
+  brand      Brand      @relation(fields: [brandId], references: [id])
+  contentDay ContentDay @relation(fields: [contentDayId], references: [id])
+  metrics    PostMetric[]
+}
+
+model PostMetric {
+  id          String   @id @default(cuid())
+  postLinkId  String
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  saves       Int      @default(0)
+  reach       Int      @default(0)
+  impressions Int      @default(0)
+  followers   Int      @default(0)
+  fetchedAt   DateTime @default(now())
+
+  postLink PostLink @relation(fields: [postLinkId], references: [id])
+}
+
+model Score {
+  id        String   @id @default(cuid())
+  brandId   String
+  period    String   // daily | weekly | monthly
+  periodKey String   // e.g. "2025-01-20" | "2025-W03" | "2025-01"
+  score     Float    // 0-100
+  breakdown String   // JSON: { linkSubmission, onTimePosting, engagement, reach }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, period, periodKey])
+}
+
+model ReminderLog {
+  id        String   @id @default(cuid())
+  brandId   String
+  forDate   DateTime
+  sentAt    DateTime @default(now())
+  type      String   // "link_missing" | "content_sent"
+}

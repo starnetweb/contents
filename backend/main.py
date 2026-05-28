@@ -49,12 +49,37 @@ app.include_router(scores.router)
 
 
 @app.on_event("startup")
-def startup():
+async def startup():
     _auto_seed()
+    await _register_telegram_webhook()
     from jobs.scheduler import start_scheduler
     start_scheduler()
     print("\n[OK] Content Agent API running")
     print(f"   Docs: http://localhost:{os.getenv('PORT', 4000)}/docs\n")
+
+
+async def _register_telegram_webhook():
+    """Register Telegram webhook so the bot receives messages."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    vps_host = os.getenv("VPS_HOST", "")
+    if not token or not vps_host or token == "your_token_here":
+        print("[Telegram] Skipping webhook registration — token or VPS_HOST not set")
+        return
+    try:
+        import httpx
+        webhook_url = f"http://{vps_host}:4001/auth/telegram/webhook"
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"https://api.telegram.org/bot{token}/setWebhook",
+                json={"url": webhook_url}
+            )
+            result = resp.json()
+            if result.get("ok"):
+                print(f"[Telegram] Webhook registered: {webhook_url}")
+            else:
+                print(f"[Telegram] Webhook registration failed: {result}")
+    except Exception as e:
+        print(f"[Telegram] Webhook registration error: {e}")
 
 
 def _auto_seed():

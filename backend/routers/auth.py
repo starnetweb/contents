@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from database import get_db
 from models import User
 from auth import verify_password, hash_password, create_token, get_current_user, require_admin
+import uuid
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,7 +50,62 @@ def register(body: RegisterRequest, db: Session = Depends(get_db), admin=Depends
 
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
-    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role}
+    return {
+        "id": user.id, "name": user.name, "email": user.email, "role": user.role,
+        "telegram_connected": bool(user.telegram_chat_id)
+    }
+
+
+@router.post("/telegram/generate-link")
+def generate_telegram_link(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Generate a one-time token the user sends to the bot to link their Telegram account."""
+    import os
+    token = str(uuid.uuid4()).replace("-", "")[:16]
+    user.telegram_token = token
+    db.commit()
+    bot_username = os.getenv("TELEGRAM_BOT_USERNAME", "your_bot")
+    return {
+        "token": token,
+        "link": f"https://t.me/{bot_username}?start={token}",
+        "instruction": f"Open the link and press Start, or send /start {token} to the bot"
+    }
+
+
+@router.post("/telegram/webhook")
+async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
+    """Receive updates from Telegram bot — matches token to user and saves chat_id."""
+    data = await request.json()
+    message = data.get("message", {})
+    text = message.get("text", "")
+    chat_id = str(message.get("chat", {}).get("id", ""))
+
+    # Handle /start <token>
+    if text.startswith("/start "):
+        token = text.split(" ", 1)[1].strip()
+        user = db.query(User).filter(User.telegram_token == token).first()
+        if user:
+            user.telegram_chat_id = chat_id
+            user.telegram_token = None
+            db.commit()
+            # Send confirmation
+            try:
+                from services.telegram_service import _get_bot
+                import asyncio
+                asyncio.create_task(
+                    _get_bot().send_message(
+                        chat_id=chat_id,
+                        text=f"✅ Your Telegram is now connected to Content Agent, {user.name}!\n\nYou'll receive content notifications here."
+                    )
+                )
+            except Exception:
+                pass
+            return {"ok": True}
+    return {"ok": True}
+
+
+@router.get("/telegram/status")
+def telegram_status(user: User = Depends(get_current_user)):
+    return {"connected": bool(user.telegram_chat_id)}
 
 
 @router.get("/users")
