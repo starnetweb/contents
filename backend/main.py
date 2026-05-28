@@ -50,10 +50,55 @@ app.include_router(scores.router)
 
 @app.on_event("startup")
 def startup():
+    _auto_seed()
     from jobs.scheduler import start_scheduler
     start_scheduler()
     print("\n[OK] Content Agent API running")
     print(f"   Docs: http://localhost:{os.getenv('PORT', 4000)}/docs\n")
+
+
+def _auto_seed():
+    """Seed brands and default admin user if the database is empty."""
+    import json
+    from passlib.context import CryptContext
+    from database import SessionLocal
+    from models import User, Brand
+    from data.brands import BRANDS
+
+    db = SessionLocal()
+    try:
+        # Seed admin user if none exists
+        if not db.query(User).first():
+            pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+            db.add(User(
+                name="Admin",
+                email="admin@contentagent.com",
+                password=pwd.hash("admin123"),
+                role="admin",
+            ))
+            print("[seed] Created default admin user: admin@contentagent.com / admin123")
+
+        # Seed brands if none exist
+        if not db.query(Brand).first():
+            for b in BRANDS:
+                db.add(Brand(
+                    name=b["name"],
+                    slug=b["slug"],
+                    description=b["description"],
+                    website=b["website"],
+                    niche=b["niche"],
+                    target_audience=b["target_audience"],
+                    platforms=json.dumps(b["platforms"]),
+                    telegram_chat_id=os.getenv(b.get("telegram_env_key", ""), None),
+                ))
+            print(f"[seed] Created {len(BRANDS)} brands")
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[seed] Warning: auto-seed failed: {e}")
+    finally:
+        db.close()
 
 
 @app.get("/")
