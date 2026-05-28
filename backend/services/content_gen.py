@@ -179,7 +179,7 @@ Return ONLY the JSON object. No other text.
 
     try:
         message = client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-haiku-4-5",
             max_tokens=6000,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
