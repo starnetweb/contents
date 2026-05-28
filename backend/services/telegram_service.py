@@ -11,7 +11,11 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env", override=True)
 
-bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
+def _get_bot():
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        raise ValueError("TELEGRAM_BOT_TOKEN is not set")
+    return Bot(token=token)
 
 PLATFORM_EMOJI = {
     "instagram": "📸",
@@ -84,18 +88,18 @@ async def send_content_calendar(brand_name: str, chat_id: str, cards: list[dict]
         f"💡 *Today's Angle:* {central_idea}\n"
         f"📰 *Source:* {news_source}"
     )
-    await bot.send_message(chat_id=chat_id, text=header, parse_mode=ParseMode.MARKDOWN)
+    await _get_bot().send_message(chat_id=chat_id, text=header, parse_mode=ParseMode.MARKDOWN)
 
     for card in cards:
         try:
             msg = format_content_card(card)
-            await bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+            await _get_bot().send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
             await asyncio.sleep(0.5)  # avoid rate limits
         except Exception as e:
             print(f"[Telegram] Error sending card for {brand_name}/{card.get('platform')}: {e}")
 
     footer = f"✅ *{len(cards)} platforms covered* | Review & approve on dashboard"
-    await bot.send_message(chat_id=chat_id, text=footer, parse_mode=ParseMode.MARKDOWN)
+    await _get_bot().send_message(chat_id=chat_id, text=footer, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_reminder(brand_name: str, chat_id: str, missing_platforms: list[str], for_date: str):
@@ -112,7 +116,7 @@ async def send_reminder(brand_name: str, chat_id: str, missing_platforms: list[s
         f"Dashboard: {os.getenv('FRONTEND_URL', 'http://localhost:3000')}"
     )
     try:
-        await bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+        await _get_bot().send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         print(f"[Telegram] Reminder error for {brand_name}: {e}")
 
