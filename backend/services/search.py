@@ -9,7 +9,11 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env", override=True)
 
-client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+def _get_client():
+    api_key = os.getenv("TAVILY_API_KEY")
+    if not api_key:
+        raise ValueError("TAVILY_API_KEY is not set")
+    return TavilyClient(api_key=api_key)
 
 
 def search_brand_news(brand: dict, max_results: int = 7) -> list[dict]:
@@ -31,7 +35,7 @@ def search_brand_news(brand: dict, max_results: int = 7) -> list[dict]:
 
     for query in queries:
         try:
-            response = client.search(
+            response = _get_client().search(
                 query=query,
                 search_depth="advanced",
                 max_results=max_results,
