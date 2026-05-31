@@ -17,7 +17,7 @@ API.interceptors.response.use(
     if (err.response?.status === 401) {
       Cookies.remove("token");
       Cookies.remove("role");
-      window.location.href = "/login";
+      window.location.href = "/no-access";
     }
     return Promise.reject(err);
   }
@@ -34,6 +34,7 @@ export const registerUser = (data: { name: string; email: string; password: stri
 export const deleteUser = (id: string) => API.delete(`/auth/users/${id}`);
 export const generateTelegramLink = () => API.post("/auth/telegram/generate-link");
 export const getTelegramStatus = () => API.get("/auth/telegram/status");
+export const regenerateSlug = (userId: string) => API.post(`/auth/users/${userId}/regenerate-slug`);
 
 // ── Brands ─────────────────────────────────────────────────
 export const getBrands = () => API.get("/brands/");

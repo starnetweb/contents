@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const role = Cookies.get("role");
-    if (!role) router.push("/login");
+    if (!role) router.push("/no-access");
     else if (role !== "admin") router.push("/creator");
     setUserName(Cookies.get("name") || "Admin");
   }, []);
@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const logout = () => {
     Cookies.remove("token"); Cookies.remove("role"); Cookies.remove("name");
-    router.push("/login");
+    router.push("/no-access");
   };
 
   return (

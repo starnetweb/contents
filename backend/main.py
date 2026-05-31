@@ -27,7 +27,22 @@ def _migrate():
         if "telegram_token" not in user_cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN telegram_token VARCHAR"))
             print("[migrate] Added users.telegram_token")
+        if "access_slug" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN access_slug VARCHAR"))
+            print("[migrate] Added users.access_slug")
         conn.commit()
+    # Generate slugs for users that don't have one
+    from database import SessionLocal
+    from models import User
+    import secrets
+    db = SessionLocal()
+    try:
+        for user in db.query(User).filter(User.access_slug == None).all():
+            user.access_slug = secrets.token_urlsafe(16)
+            print(f"[migrate] Generated access_slug for {user.email}")
+        db.commit()
+    finally:
+        db.close()
 
 _migrate()
 
@@ -110,12 +125,14 @@ def _auto_seed():
     try:
         # Seed admin user if none exists
         if not db.query(User).first():
+            import secrets as _secrets
             pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
             db.add(User(
                 name="Admin",
                 email="admin@contentagent.com",
                 password=pwd.hash("admin123"),
                 role="admin",
+                access_slug=_secrets.token_urlsafe(16),
             ))
             print("[seed] Created default admin user: admin@contentagent.com / admin123")
 

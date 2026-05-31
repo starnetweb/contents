@@ -21,6 +21,7 @@ class User(Base):
     created_at = Column(DateTime, server_default=func.now())
     telegram_chat_id  = Column(String, nullable=True)   # set after user connects bot
     telegram_token    = Column(String, nullable=True)   # one-time link token
+    access_slug       = Column(String, nullable=True, unique=True)  # unique URL token
 
 
 class Brand(Base):

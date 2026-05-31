@@ -19,7 +19,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const role = Cookies.get("role");
-    if (!role) router.push("/login");
+    if (!role) router.push("/no-access");
     setUserName(Cookies.get("name") || "Creator");
   }, []);
 
@@ -29,7 +29,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
 
   const logout = () => {
     Cookies.remove("token"); Cookies.remove("role"); Cookies.remove("name");
-    router.push("/login");
+    router.push("/no-access");
   };
 
   const currentLabel = navItems.find((n) => n.href === pathname)?.label || "Dashboard";

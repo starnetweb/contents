@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getUsers, registerUser, deleteUser } from "@/lib/api";
+import { getUsers, registerUser, deleteUser, regenerateSlug } from "@/lib/api";
+
+const BASE = typeof window !== "undefined" ? window.location.origin : "";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "creator" });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => { fetchUsers(); }, []);
   const fetchUsers = () => getUsers().then((r) => setUsers(r.data));
@@ -29,6 +32,19 @@ export default function UsersPage() {
   const remove = async (id: string, name: string) => {
     if (!confirm(`Delete ${name}?`)) return;
     await deleteUser(id);
+    fetchUsers();
+  };
+
+  const copyLink = (slug: string) => {
+    const url = `${BASE}/access/${slug}`;
+    navigator.clipboard.writeText(url);
+    setCopied(slug);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const regen = async (id: string) => {
+    if (!confirm("Generate a new link? The old link will stop working.")) return;
+    await regenerateSlug(id);
     fetchUsers();
   };
 
@@ -77,24 +93,45 @@ export default function UsersPage() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-800">
           <h2 className="font-semibold text-white">All Users ({users.length})</h2>
+          <p className="text-xs text-gray-500 mt-1">Share each user&apos;s unique access link — no password needed</p>
         </div>
-        {users.map((u) => (
-          <div key={u.id} className="flex items-center justify-between px-6 py-4 border-b border-gray-800 last:border-0">
-            <div>
-              <p className="text-white font-medium">{u.name}</p>
-              <p className="text-sm text-gray-400">{u.email}</p>
+        {users.map((u) => {
+          const link = u.access_slug ? `${BASE}/access/${u.access_slug}` : null;
+          return (
+            <div key={u.id} className="px-6 py-4 border-b border-gray-800 last:border-0">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-white font-medium">{u.name}</span>
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-blue-500/20 text-blue-400" : "bg-gray-700 text-gray-400"}`}>
+                    {u.role}
+                  </span>
+                </div>
+                <button onClick={() => remove(u.id, u.name)}
+                  className="text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors">
+                  Remove
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-2">{u.email}</p>
+              {link ? (
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-gray-800 text-green-400 px-3 py-1.5 rounded-lg truncate">
+                    {link}
+                  </code>
+                  <button onClick={() => copyLink(u.access_slug)}
+                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    {copied === u.access_slug ? "Copied!" : "Copy"}
+                  </button>
+                  <button onClick={() => regen(u.id)}
+                    className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    New Link
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-yellow-400">No access link — will be generated on next server restart</p>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-1 rounded-full ${u.role === "admin" ? "bg-blue-500/20 text-blue-400" : "bg-gray-700 text-gray-400"}`}>
-                {u.role}
-              </span>
-              <button onClick={() => remove(u.id, u.name)}
-                className="text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg transition-colors">
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

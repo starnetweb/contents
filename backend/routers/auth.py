@@ -36,16 +36,18 @@ def register(body: RegisterRequest, db: Session = Depends(get_db), admin=Depends
     existing = db.query(User).filter(User.email == body.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    import secrets
     user = User(
         name=body.name,
         email=body.email,
         password=hash_password(body.password),
-        role=body.role
+        role=body.role,
+        access_slug=secrets.token_urlsafe(16),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role}
+    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role, "access_slug": user.access_slug}
 
 
 @router.get("/me")
@@ -108,10 +110,45 @@ def telegram_status(user: User = Depends(get_current_user)):
     return {"connected": bool(user.telegram_chat_id)}
 
 
+@router.get("/access/{slug}")
+def access_by_slug(slug: str, db: Session = Depends(get_db)):
+    """Auto-login via unique URL slug — no password needed."""
+    user = db.query(User).filter(User.access_slug == slug).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=404, detail="Access link not found or inactive")
+    token = create_token({"sub": user.id, "role": user.role})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": user.role,
+        "name": user.name,
+        "id": user.id,
+    }
+
+
+@router.post("/users/{user_id}/regenerate-slug")
+def regenerate_slug(user_id: str, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Generate a new access slug for a user (invalidates old link)."""
+    import secrets
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.access_slug = secrets.token_urlsafe(16)
+    db.commit()
+    return {"access_slug": user.access_slug}
+
+
 @router.get("/users")
 def list_users(db: Session = Depends(get_db), admin=Depends(require_admin)):
     users = db.query(User).all()
-    return [{"id": u.id, "name": u.name, "email": u.email, "role": u.role, "is_active": u.is_active} for u in users]
+    return [
+        {
+            "id": u.id, "name": u.name, "email": u.email,
+            "role": u.role, "is_active": u.is_active,
+            "access_slug": u.access_slug,
+        }
+        for u in users
+    ]
 
 
 @router.delete("/users/{user_id}")
