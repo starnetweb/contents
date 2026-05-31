@@ -19,7 +19,8 @@ export default function AccessPage() {
         return r.json();
       })
       .then((data) => {
-        const cookieOpts = { expires: 7, sameSite: "None" as const, secure: true };
+        const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+        const cookieOpts = { expires: 7, sameSite: isHttps ? ("None" as const) : ("Lax" as const), secure: isHttps };
         Cookies.set("token", data.access_token, cookieOpts);
         Cookies.set("role", data.role, cookieOpts);
         Cookies.set("name", data.name, cookieOpts);
