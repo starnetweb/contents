@@ -19,9 +19,10 @@ export default function AccessPage() {
         return r.json();
       })
       .then((data) => {
-        Cookies.set("token", data.access_token, { expires: 7 });
-        Cookies.set("role", data.role, { expires: 7 });
-        Cookies.set("name", data.name, { expires: 7 });
+        const cookieOpts = { expires: 7, sameSite: "None" as const, secure: true };
+        Cookies.set("token", data.access_token, cookieOpts);
+        Cookies.set("role", data.role, cookieOpts);
+        Cookies.set("name", data.name, cookieOpts);
         router.replace(data.role === "admin" ? "/admin" : "/creator");
       })
       .catch((e) => {

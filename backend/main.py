@@ -52,20 +52,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
-origins = [
-    "http://localhost:3000",
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-]
-# Support multiple comma-separated origins in FRONTEND_URL
-extra = os.getenv("EXTRA_ORIGINS", "")
-if extra:
-    origins += [o.strip() for o in extra.split(",") if o.strip()]
-
+# CORS — allow any origin so the app works when embedded as an iframe
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,   # must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )

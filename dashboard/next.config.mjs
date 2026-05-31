@@ -10,6 +10,23 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Allow app to be embedded as an iframe from any origin
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // Remove X-Frame-Options so iframes are allowed
+          { key: 'X-Frame-Options', value: 'ALLOWALL' },
+          // Allow framing from any origin
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors *;",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

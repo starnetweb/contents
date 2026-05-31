@@ -28,7 +28,8 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   const logout = () => {
-    Cookies.remove("token"); Cookies.remove("role"); Cookies.remove("name");
+    const opts = { sameSite: "None" as const, secure: true };
+    Cookies.remove("token", opts); Cookies.remove("role", opts); Cookies.remove("name", opts);
     router.push("/no-access");
   };
 
