@@ -19,11 +19,14 @@ export default function AccessPage() {
         return r.json();
       })
       .then((data) => {
-        const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
-        const cookieOpts = { expires: 7, sameSite: isHttps ? ("None" as const) : ("Lax" as const), secure: isHttps };
-        Cookies.set("token", data.access_token, cookieOpts);
-        Cookies.set("role", data.role, cookieOpts);
-        Cookies.set("name", data.name, cookieOpts);
+        // Use localStorage — works in iframes (cookies are blocked cross-origin)
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("name", data.name);
+        // Also set cookies as fallback for direct access
+        Cookies.set("token", data.access_token, { expires: 7 });
+        Cookies.set("role", data.role, { expires: 7 });
+        Cookies.set("name", data.name, { expires: 7 });
         router.replace(data.role === "admin" ? "/admin" : "/creator");
       })
       .catch((e) => {

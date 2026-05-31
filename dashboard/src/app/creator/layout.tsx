@@ -18,9 +18,9 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
   const [userName, setUserName] = useState("Creator");
 
   useEffect(() => {
-    const role = Cookies.get("role");
+    const role = localStorage.getItem("role") || Cookies.get("role");
     if (!role) router.push("/no-access");
-    setUserName(Cookies.get("name") || "Creator");
+    setUserName(localStorage.getItem("name") || Cookies.get("name") || "Creator");
   }, []);
 
   useEffect(() => {
@@ -28,6 +28,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   const logout = () => {
+    localStorage.removeItem("token"); localStorage.removeItem("role"); localStorage.removeItem("name");
     Cookies.remove("token"); Cookies.remove("role"); Cookies.remove("name");
     router.push("/no-access");
   };

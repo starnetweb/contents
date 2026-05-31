@@ -20,10 +20,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userName, setUserName] = useState("Admin");
 
   useEffect(() => {
-    const role = Cookies.get("role");
+    const role = localStorage.getItem("role") || Cookies.get("role");
     if (!role) router.push("/no-access");
     else if (role !== "admin") router.push("/creator");
-    setUserName(Cookies.get("name") || "Admin");
+    setUserName(localStorage.getItem("name") || Cookies.get("name") || "Admin");
   }, []);
 
   // Close sidebar on route change (mobile)
@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname]);
 
   const logout = () => {
+    localStorage.removeItem("token"); localStorage.removeItem("role"); localStorage.removeItem("name");
     Cookies.remove("token"); Cookies.remove("role"); Cookies.remove("name");
     router.push("/no-access");
   };

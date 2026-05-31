@@ -6,7 +6,7 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((config) => {
-  const token = Cookies.get("token");
+  const token = localStorage.getItem("token") || Cookies.get("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -15,8 +15,12 @@ API.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("name");
       Cookies.remove("token");
       Cookies.remove("role");
+      Cookies.remove("name");
       window.location.href = "/no-access";
     }
     return Promise.reject(err);
