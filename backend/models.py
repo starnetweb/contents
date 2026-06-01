@@ -37,6 +37,7 @@ class Brand(Base):
     platforms       = Column(Text, nullable=False)        # JSON list
     telegram_chat_id = Column(String, nullable=True)
     is_active        = Column(Boolean, default=True)
+    custom_prompt    = Column(Text, nullable=True)   # optional per-brand content instructions
     created_at       = Column(DateTime, server_default=func.now())
 
     content_days = relationship("ContentDay", back_populates="brand")

@@ -47,3 +47,26 @@ def update_telegram(brand_id: str, body: dict, db: Session = Depends(get_db), ad
     brand.telegram_chat_id = body.get("chat_id")
     db.commit()
     return {"message": "Telegram chat ID updated"}
+
+
+@router.get("/{brand_id}/prompt")
+def get_prompt(brand_id: str, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    brand = db.query(Brand).filter(Brand.id == brand_id).first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return {
+        "brand_id": brand.id,
+        "brand_name": brand.name,
+        "brand_slug": brand.slug,
+        "custom_prompt": brand.custom_prompt or "",
+    }
+
+
+@router.put("/{brand_id}/prompt")
+def update_prompt(brand_id: str, body: dict, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    brand = db.query(Brand).filter(Brand.id == brand_id).first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    brand.custom_prompt = body.get("custom_prompt", "").strip() or None
+    db.commit()
+    return {"message": "Prompt updated", "brand_name": brand.name}

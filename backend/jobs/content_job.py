@@ -80,7 +80,7 @@ def run_content_generation():
                 news = []  # No news — Claude will generate a fresh evergreen idea
 
             print(f"  [>>] Generating content for {brand.name} (avoiding {len(previous_ideas)} past ideas)...")
-            cards = generate_content_for_brand(brand_data, news, tomorrow, previous_ideas)
+            cards = generate_content_for_brand(brand_data, news, tomorrow, previous_ideas, brand.custom_prompt or "")
 
             if not cards:
                 print(f"  [!] No content generated for {brand.name}")

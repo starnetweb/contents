@@ -44,6 +44,8 @@ export const regenerateSlug = (userId: string) => API.post(`/auth/users/${userId
 export const getBrands = () => API.get("/brands/");
 export const toggleBrand = (id: string) => API.put(`/brands/${id}/toggle`);
 export const updateBrandTelegram = (id: string, chat_id: string) => API.put(`/brands/${id}/telegram`, { chat_id });
+export const getBrandPrompt = (id: string) => API.get(`/brands/${id}/prompt`);
+export const updateBrandPrompt = (id: string, custom_prompt: string) => API.put(`/brands/${id}/prompt`, { custom_prompt });
 
 // ── Content ────────────────────────────────────────────────
 export const getContent = (params?: { date?: string; brand_slug?: string }) =>

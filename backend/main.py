@@ -31,6 +31,14 @@ def _migrate():
             conn.execute(text("ALTER TABLE users ADD COLUMN access_slug VARCHAR"))
             print("[migrate] Added users.access_slug")
         conn.commit()
+    # Brand migrations
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        brand_cols = [c["name"] for c in inspector.get_columns("brands")]
+        if "custom_prompt" not in brand_cols:
+            conn.execute(text("ALTER TABLE brands ADD COLUMN custom_prompt TEXT"))
+            print("[migrate] Added brands.custom_prompt")
+        conn.commit()
     # Generate slugs for users that don't have one
     from database import SessionLocal
     from models import User

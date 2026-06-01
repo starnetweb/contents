@@ -46,7 +46,8 @@ def generate_content_for_brand(
     brand: dict,
     news_items: list[dict],
     for_date: str,
-    previous_ideas: list[str] = []
+    previous_ideas: list[str] = [],
+    custom_prompt: str = ""
 ) -> list[dict]:
     """
     Generate one content idea adapted across all platforms for a brand.
@@ -105,6 +106,7 @@ INSTRUCTIONS:
 1. {news_instruction}
 2. The idea must be fresh — not from the previously used list
 3. Adapt it to ALL {len(brand['platforms'])} platforms: {', '.join(brand['platforms'])}
+{f"4. ADDITIONAL BRAND INSTRUCTIONS (follow these carefully):{chr(10)}{custom_prompt}{chr(10)}" if custom_prompt else ""}
 4. Same topic, same core message — but native format per platform
 5. Use Nigerian English, local references, culturally relevant hooks
 6. Make every hook STOP the scroll
