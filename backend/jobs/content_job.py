@@ -69,9 +69,15 @@ def run_content_generation():
 
             # Fetch previous ideas to prevent duplicates
             previous_ideas = get_previous_ideas(db, brand.id)
-            print(f"  [>>] Searching last-24h news for {brand.name}...")
-            news = search_brand_news(brand_data)
-            print(f"       Found {len(news)} news items")
+
+            # Only ExamKits searches for news — all other brands use evergreen strategy
+            if brand_data["slug"] == "examkits":
+                print(f"  [>>] Searching last-24h news for {brand.name} (news strategy)...")
+                news = search_brand_news(brand_data)
+                print(f"       Found {len(news)} news items")
+            else:
+                print(f"  [>>] Skipping news search for {brand.name} (evergreen strategy)...")
+                news = []  # No news — Claude will generate a fresh evergreen idea
 
             print(f"  [>>] Generating content for {brand.name} (avoiding {len(previous_ideas)} past ideas)...")
             cards = generate_content_for_brand(brand_data, news, tomorrow, previous_ideas)

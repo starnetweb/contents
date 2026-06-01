@@ -53,10 +53,20 @@ def generate_content_for_brand(
     previous_ideas: list of idea summaries already used — Claude will avoid repeating them.
     """
 
-    news_summary = "\n".join([
-        f"- [{item.get('published_date', 'today')}] {item['title']}: {item['content'][:250]}"
-        for item in news_items[:6]
-    ]) if news_items else "No breaking news today — use a strong evergreen angle relevant to the brand."
+    if news_items:
+        news_summary = "\n".join([
+            f"- [{item.get('published_date', 'today')}] {item['title']}: {item['content'][:250]}"
+            for item in news_items[:6]
+        ])
+        news_instruction = "Pick ONE strong content idea inspired by today's news. The idea must connect the news to the brand's audience."
+    else:
+        news_summary = None
+        news_instruction = (
+            "No news search was done for this brand — generate a completely fresh, creative EVERGREEN content idea. "
+            "Do NOT use news at all. Think: what useful, entertaining or inspiring angle about this brand's niche "
+            "would resonate deeply with the target audience TODAY? Make it feel timely and original even without news. "
+            "The idea must be different from all previously used ideas."
+        )
 
     prev_ideas_text = ""
     if previous_ideas:
@@ -73,6 +83,8 @@ def generate_content_for_brand(
             f"    Algorithm tip: {strategy['algorithm_note']}\n"
         )
 
+    news_block = f"TODAY'S NEWS & TRENDS (last 24 hours):\n{news_summary}" if news_summary else "CONTENT STRATEGY: Evergreen — no news search. Generate a fresh original idea."
+
     user_prompt = f"""
 Generate tomorrow's ({for_date}) content for this brand.
 
@@ -83,15 +95,14 @@ TARGET AUDIENCE: {brand['target_audience']}
 WEBSITE: {brand['website']}
 TONE: {brand['content_tone']}
 
-TODAY'S NEWS & TRENDS (last 24 hours):
-{news_summary}
+{news_block}
 {prev_ideas_text}
 
 PLATFORM INTELLIGENCE:
 {platform_details}
 
 INSTRUCTIONS:
-1. Pick ONE strong content idea inspired by today's news (or evergreen if no news fits)
+1. {news_instruction}
 2. The idea must be fresh — not from the previously used list
 3. Adapt it to ALL {len(brand['platforms'])} platforms: {', '.join(brand['platforms'])}
 4. Same topic, same core message — but native format per platform
