@@ -65,8 +65,9 @@ BRANDS = [
         "telegram_env_key": "TELEGRAM_EXAMKITS_CHAT_ID",
         "content_tone": "encouraging, motivational, direct, exam-focused, urgent during exam seasons",
         "search_keywords": [
-            "JAMB 2025 news", "JAMB CBT date", "WAEC timetable 2025", "Post UTME news",
-            "TRCN exam", "NECO timetable", "Nigerian exam news", "JAMB cut off mark"
+            "JAMB 2025 results", "JAMB UTME result checker", "JAMB cut off mark 2025",
+            "post UTME 2025 news", "Nigerian university admission 2025", "JAMB CAPS admission",
+            "WAEC 2025 result", "university admission list Nigeria", "JAMB supplementary 2025"
         ],
         "platform_strategy": {
             "instagram": {
