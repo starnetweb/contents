@@ -193,7 +193,7 @@ Return ONLY the JSON object. No other text.
     try:
         message = client.messages.create(
             model="claude-haiku-4-5",
-            max_tokens=6000,
+            max_tokens=8000,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
         )
@@ -205,6 +205,22 @@ Return ONLY the JSON object. No other text.
             if raw.startswith("json"):
                 raw = raw[4:]
         raw = raw.strip()
+
+        # If JSON was truncated, try to extract just the outer object
+        if not raw.endswith("}"):
+            # Find the last complete top-level closing brace
+            depth = 0
+            end_pos = -1
+            for i, ch in enumerate(raw):
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end_pos = i
+            if end_pos > 0:
+                raw = raw[:end_pos + 1]
+                print(f"    [warn] JSON truncated — recovered up to char {end_pos}")
 
         result = json.loads(raw)
         central_idea = result.get("central_idea", "")
