@@ -74,13 +74,15 @@ def update_cards(content_day_id: str, body: dict, db: Session = Depends(get_db),
 
 
 @router.post("/generate")
-def trigger_generation(background_tasks: BackgroundTasks, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    """Admin can manually trigger content generation."""
+def trigger_generation(background_tasks: BackgroundTasks, force: bool = False, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Admin can manually trigger content generation.
+    force=true will delete existing content for tomorrow and regenerate from scratch."""
     active_brands = db.query(Brand).filter(Brand.is_active == True).count()
     if active_brands == 0:
         return {"message": "No active brands to generate content for. Enable at least one brand first.", "status": "skipped"}
-    background_tasks.add_task(run_content_generation)
-    return {"message": f"Content generation started for {active_brands} active brand(s). Check back in 1-2 minutes.", "status": "started", "brands": active_brands}
+    background_tasks.add_task(run_content_generation, force)
+    action = "Re-generating" if force else "Generating"
+    return {"message": f"{action} content for {active_brands} active brand(s). Check back in 1-2 minutes.", "status": "started", "brands": active_brands}
 
 
 @router.post("/send")

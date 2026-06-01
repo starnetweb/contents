@@ -39,13 +39,14 @@ def get_previous_ideas(db, brand_id: str, days: int = 14) -> list[str]:
     return ideas
 
 
-def run_content_generation():
-    """Generate content for all active brands. Called at 5:00 PM WAT."""
+def run_content_generation(force: bool = False):
+    """Generate content for all active brands. Called at 5:00 PM WAT.
+    force=True deletes existing content and regenerates — used by manual 'Generate Now'."""
     db = SessionLocal()
     now_wat = datetime.now(WAT)
     tomorrow = (now_wat + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    print(f"\n[ContentJob] Starting content generation for {tomorrow}...")
+    print(f"\n[ContentJob] Starting content generation for {tomorrow} (force={force})...")
 
     for brand_data in BRANDS:
         try:
@@ -64,8 +65,13 @@ def run_content_generation():
                 ContentDay.for_date == for_date
             ).first()
             if existing:
-                print(f"  [~] Content already exists for {brand.name} / {tomorrow}")
-                continue
+                if force:
+                    print(f"  [~] Force-regenerating content for {brand.name} / {tomorrow}")
+                    db.delete(existing)
+                    db.commit()
+                else:
+                    print(f"  [~] Content already exists for {brand.name} / {tomorrow} (use force=True to regenerate)")
+                    continue
 
             # Fetch previous ideas to prevent duplicates
             previous_ideas = get_previous_ideas(db, brand.id)

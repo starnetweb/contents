@@ -53,7 +53,7 @@ export const getContent = (params?: { date?: string; brand_slug?: string }) =>
 export const approveContent = (id: string) => API.put(`/content/${id}/approve`);
 export const updateCards = (id: string, cards: unknown[]) =>
   API.put(`/content/${id}/cards`, { cards });
-export const triggerGeneration = () => API.post("/content/generate");
+export const triggerGeneration = (force = true) => API.post(`/content/generate?force=${force}`);
 export const triggerSend = () => API.post("/content/send");
 
 // ── Links ──────────────────────────────────────────────────
